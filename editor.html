@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creador de Álbumes Visual</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+
+        #sidebar {
+            width: 380px;
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 10;
+            scrollbar-width: thin;
+        }
+
+        #preview {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e5e7eb;
+            position: relative;
+            background-image: radial-gradient(#d1d5db 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* Iframe Mobile Container */
+        .preview-frame {
+            width: 414px;
+            height: 896px;
+            background: white;
+            border-radius: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            border: 12px solid #1f2937;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .preview-frame iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+
+        /* Sidebar Elements */
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            background: #ffffff;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: #111827;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+            transition: all 0.2s;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(168, 85, 247, 0.4);
+            filter: brightness(1.05);
+        }
+
+        .sidebar-section {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .sidebar-section h3 {
+            margin: 0 0 16px 0;
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 700;
+        }
+
+        /* Form controls */
+        .control-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: #374151;
+            font-weight: 600;
+        }
+
+        select,
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            box-sizing: border-box;
+            background: #f9fafb;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+
+        select:focus,
+        input[type="text"]:focus {
+            border-color: #a855f7;
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+            background: white;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 0;
+        }
+
+        .checkbox-label input {
+            width: 16px;
+            height: 16px;
+            accent-color: #a855f7;
+            cursor: pointer;
+        }
+
+        /* Lists */
+        .screen-item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: box-shadow 0.2s;
+        }
+
+        .screen-item:hover {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border-color: #d1d5db;
+        }
+
+        .screen-header {
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background: #f9fafb;
+            border-bottom: 1px solid transparent;
+        }
+
+        .screen-item.open .screen-header {
+            border-bottom-color: #e5e7eb;
+            background: white;
+        }
+
+        .screen-title {
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .screen-emoji {
+            font-size: 18px;
+        }
+
+        .screen-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .btn-icon {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+            background: #e5e7eb;
+            color: #111827;
+        }
+
+        .btn-icon.danger:hover {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .screen-body {
+            padding: 16px;
+            display: none;
+        }
+
+        .screen-item.open .screen-body {
+            display: block;
+        }
+
+        .add-btn {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #64748b;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .add-btn:hover {
+            border-color: #a855f7;
+            color: #a855f7;
+            background: #faf5ff;
+        }
+
+        /* Section Items */
+        .section-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-type {
+            font-weight: 600;
+            color: #475569;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.05em;
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* Modal Gallery */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            width: 80%;
+            max-width: 900px;
+            height: 80vh;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-close {
+            background: #f1f5f9;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .modal-close:hover {
+            background: #e2e8f0;
+            color: red;
+        }
+
+        .gallery-top-bar {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+        }
+
+        .gallery-tabs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .gallery-tab {
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: #f1f5f9;
+            color: #475569;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .gallery-tab.active {
+            background: #1e293b;
+            color: white;
+        }
+
+        .gallery-grid {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 16px;
+            background: #f8fafc;
+        }
+
+        .gallery-item {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #e2e8f0;
+            border: 2px solid transparent;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.2s, border-color 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.05);
+            border-color: #a855f7;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 2;
+        }
+
+        .gallery-item img,
+        .gallery-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .gallery-item .audio-icon {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            background: #f1f5f9;
+        }
+
+        .item-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 10px;
+            padding: 4px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .folder-picker-btn {
+            background: #10b981;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .folder-picker-btn input[type="file"] {
+            display: none;
+        }
+
+        .folder-picker-btn:hover {
+            background: #059669;
+        }
+
+        /* Inject gallery button on inputs */
+        .input-with-gallery {
+            display: flex;
+            gap: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h2>✨ Constructor</h2>
+            <button class="export-btn" id="btn-export">Exportar HTML</button>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Medios y Archivos Locales</h3>
+            <!-- Modern API Button -->
+            <button class="add-btn" id="btn-import-dir" style="margin-bottom: 8px;">
+                <span>📂</span> Importar Directorio de Proyecto
+            </button>
+            <button class="add-btn" id="btn-restore-dir"
+                style="display: none; background: #e0f2fe; color: #0284c7; border: 1px solid #7dd3fc; margin-bottom: 8px;">
+                <span>🔄</span> Restaurar Carpeta Anterior
+            </button>
+
+            <!-- Legacy Fallback -->
+            <label class="folder-picker-btn" id="legacy-picker-container" style="display: none; margin-top: 8px;">
+                <span>📁</span> Carga Clásica (Fallback)
+                <input type="file" id="dir-picker" webkitdirectory directory multiple>
+            </label>
+
+            <p style="font-size: 11px; color: #64748b; margin-top: 8px; line-height: 1.4;">
+                Selecciona la carpeta raíz de tu proyecto (ej. "copia") para cargar todas tus fotos, videos y música sin
+                tener que teclear las rutas a mano.
+            </p>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Configuración Global</h3>
+            <div class="control-group">
+                <label for="global-transition">Efecto de Transición</label>
+                <select id="global-transition">
+                    <option value="gift">🎁 Caja de Regalo (gift)</option>
+                    <option value="swipe">☝️ Deslizar Pantalla (swipe)</option>
+                    <option value="balloon">🎈 Globo Explotando (balloon)</option>
+                    <option value="candle">🕯️ Soplar Vela (candle)</option>
+                    <option value="envelope">✉️ Carta / Sobre (envelope)</option>
+                </select>
+            </div>
+
+            <label class="checkbox-label">
+                <input type="checkbox" id="global-progress" checked>
+                Mostrar barra de progreso superior
+            </label>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Pantallas del Álbum</h3>
+            <div id="screens-list">
+                <!-- Se inyectan las pantallas con JS -->
+            </div>
+
+            <button class="add-btn" id="btn-add-screen" style="margin-top: 10px;">
+                <span>➕</span> Añadir Nueva Pantalla
+            </button>
+        </div>
+    </div>
+
+    <div id="preview">
+        <div class="preview-frame">
+            <iframe id="preview-frame" src="index.html"></iframe>
+        </div>
+    </div>
+
+    <!-- Media Gallery Modal -->
+    <div class="modal-overlay" id="gallery-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🖼️ Galería Visual de Medios</h3>
+                <button class="modal-close" onclick="closeGallery()">❌</button>
+            </div>
+
+            <div class="gallery-top-bar">
+                <div class="gallery-tabs">
+                    <button class="gallery-tab active" onclick="switchGalleryTab('images')">📷 Fotos</button>
+                    <button class="gallery-tab" onclick="switchGalleryTab('videos')">🎬 Videos</button>
+                    <button class="gallery-tab" onclick="switchGalleryTab('audios')">🎵 Música</button>
+                </div>
+                <div style="font-size: 12px; color: #64748b;" id="gallery-status">0 archivos cargados</div>
+            </div>
+
+            <div class="gallery-grid" id="gallery-grid">
+                <!-- Se inyectan miniaturas aquí -->
+                <div style="grid-column: 1 / -1; text-align: center; color: #94a3b8; padding: 40px;">
+                    Usa el botón "Importar Directorio de Proyecto" en la barra lateral para escanear tus archivos.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="editor.js"></script>
+</body>
+
+</html>
